@@ -1,0 +1,6 @@
+order_id,order_date,customer_id,customer_name,total_amount,status
+ON-1001,2025-11-01,C-100,Le Thi Nga,150.5,PAID
+ON-1002,01/11/2025,C-101,Tran Van B,99.9,SHIPPED
+ON-1003,02/11/2025,C-102,Pham An 123,200,PENDING
+ON-1004,03/11/2025,C-103,,0,CANCELLED
+

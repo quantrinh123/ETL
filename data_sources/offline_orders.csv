@@ -1,0 +1,5 @@
+order_id,date,cust_id,name,total,order_status
+OF-2001,01/11/2025,C-900,Nguyen Thi C,250,COMPLETED
+OF-2002,02/11/2025,C-901,Pham 4 D,180,DONE
+OF-2003,04/11/2025,C-902,Hoang Van E,abc,PAID
+
