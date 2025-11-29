@@ -10,7 +10,7 @@ from .config import get_settings
 from .logging_conf import configure_logging
 from .utils import json_dumps
 
-LOGGER = logging.getLogger("producer.offline")
+LOGGER = logging.getLogger("producer.online")
 
 
 def publish_csv(path: Path) -> None:
@@ -30,20 +30,20 @@ def publish_csv(path: Path) -> None:
     with path.open(encoding="utf-8") as handle:
         reader = csv.DictReader(handle)
         for row in reader:
-            payload = {"source": "offline", "table": "orders", "data": row}
+            payload = {"source": "online", "table": "orders", "data": row}
             channel.basic_publish(
                 exchange="",
                 routing_key=settings.rabbitmq_queue,
                 body=json_dumps(payload),
                 properties=pika.BasicProperties(delivery_mode=2),
             )
-            LOGGER.info("Published offline order %s", row.get("order_id"))
+            LOGGER.info("Published online order %s", row.get("order_id"))
 
     connection.close()
 
 
 if __name__ == "__main__":
     settings = get_settings()
-    csv_path = settings.data_sources_dir / "offline_orders.csv"
+    csv_path = settings.upload_dir / "online_orders.csv"
     publish_csv(csv_path)
 

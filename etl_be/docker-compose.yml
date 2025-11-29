@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   rabbitmq:
     image: rabbitmq:3.11-management
@@ -23,10 +21,35 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U orders_user"]
+      test: ["CMD-SHELL", "pg_isready -U orders_user -d orders_db"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: order-api
+    depends_on:
+      rabbitmq:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_QUEUE: orders_raw
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: orders_user
+      POSTGRES_PASSWORD: orders_pass
+      POSTGRES_DB: orders_db
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./upload:/app/upload
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
   consumer:
     build:
@@ -41,15 +64,16 @@ services:
     environment:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_QUEUE: orders_raw
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
       POSTGRES_HOST: postgres
       POSTGRES_USER: orders_user
       POSTGRES_PASSWORD: orders_pass
       POSTGRES_DB: orders_db
     volumes:
-      - ./data_sources:/app/data_sources
-      - ./staging:/app/staging
-      - ./output:/app/output
-    command: ["python", "app/consumer_orders.py"]
+      - ./upload:/app/upload
+    # Run as module to keep package-relative imports working
+    command: ["python", "-m", "app.consumer_orders"]
 
 volumes:
   postgres_data:

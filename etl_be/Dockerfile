@@ -9,5 +9,6 @@ COPY . .
 
 ENV PYTHONUNBUFFERED=1
 
-CMD ["python", "app/consumer_orders.py"]
+# Default to running FastAPI app; docker-compose overrides for consumer
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
