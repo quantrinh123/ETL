@@ -17,7 +17,7 @@ from .db import (
     upsert_order,
 )
 from .logging_conf import configure_logging
-from .transform import normalize_order
+from .transform import clean_and_fix_errors, normalize_order
 from .utils import json_loads
 from .validation import validate_order
 
@@ -30,6 +30,12 @@ def handle_message(body: bytes, settings, SessionLocal) -> None:
 
     canonical = normalize_order(source, data)
     raw_record = canonical.copy()
+    
+    # Tự động sửa lỗi nếu có thể (Nếu chỉnh sửa được thì thực hiện)
+    canonical, was_fixed = clean_and_fix_errors(canonical)
+    if was_fixed:
+        LOGGER.info("Auto-fixed errors in order %s from source %s", canonical.get("order_id"), source)
+    
     is_valid, errors = validate_order(canonical)
 
     session = SessionLocal()
