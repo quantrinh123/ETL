@@ -8,6 +8,7 @@ from typing import Iterable, Dict, Type, List, Any
 import pika
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
+from pydantic import BaseModel
 
 from .config import get_settings
 from .db import create_tables, get_engine, get_session_factory, OrdersClean, OrdersError
@@ -19,6 +20,11 @@ app = FastAPI(title="Orders ETL API", version="1.0.0")
 settings = get_settings()
 engine = None
 SessionLocal = None
+
+
+class OrdersResponse(BaseModel):
+    items: List[Dict[str, Any]]
+    count: int
 
 
 def publish_rows(source: str, rows: Iterable[Dict[str, object]]) -> int:
@@ -114,13 +120,13 @@ def _fetch_rows(model: Type, limit: int, is_clean: bool) -> List[Dict[str, Any]]
         session.close()
 
 
-@app.get("/orders/clean")
-async def get_orders_clean(limit: int = 100) -> dict[str, List[Dict[str, Any]]]:
+@app.get("/orders/clean", response_model=OrdersResponse)
+async def get_orders_clean(limit: int = 100) -> OrdersResponse:
     items = await run_in_threadpool(_fetch_rows, OrdersClean, limit, True)
-    return {"items": items, "count": len(items)}
+    return OrdersResponse(items=items, count=len(items))
 
 
-@app.get("/orders/error")
-async def get_orders_error(limit: int = 100) -> dict[str, List[Dict[str, Any]]]:
+@app.get("/orders/error", response_model=OrdersResponse)
+async def get_orders_error(limit: int = 100) -> OrdersResponse:
     items = await run_in_threadpool(_fetch_rows, OrdersError, limit, False)
-    return {"items": items, "count": len(items)}
+    return OrdersResponse(items=items, count=len(items))
